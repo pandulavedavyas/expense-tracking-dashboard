@@ -220,12 +220,12 @@
                 fetch('/api/check-email?email=' + encodeURIComponent(email))
                     .then(function(res) { return res.json(); })
                     .then(function(data) {
-                        if (data.available) {
-                            hint.textContent = 'Email is available';
-                            hint.className = 'field-hint hint-success';
-                        } else {
+                        if (data.exists) {
                             hint.textContent = 'Email is already registered';
                             hint.className = 'field-hint hint-error';
+                        } else {
+                            hint.textContent = 'Email is available';
+                            hint.className = 'field-hint hint-success';
                         }
                     })
                     .catch(function() {

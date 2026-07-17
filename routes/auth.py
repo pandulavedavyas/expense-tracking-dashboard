@@ -38,7 +38,7 @@ def register():
         if errors:
             for e in errors:
                 flash(e, 'error')
-            return render_template('register.html', name=name, email=email)
+            return render_template('register.html')
 
         user = User(
             name=name,
@@ -62,7 +62,7 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-        remember = request.form.get('remember') == 'on'
+        remember = request.form.get('remember') in ('on', '1', 'true', 'yes')
 
         user = User.query.filter_by(email=email).first()
 
@@ -110,4 +110,6 @@ def check_email():
 def logout():
     logout_user()
     flash('Logged out successfully.', 'success')
-    return redirect(url_for('auth.login'))
+    resp = redirect(url_for('auth.login'))
+    resp.delete_cookie('remembered_email')
+    return resp
