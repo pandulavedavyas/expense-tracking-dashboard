@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_login import LoginManager
 from config import Config
@@ -8,7 +9,10 @@ login_manager = LoginManager()
 
 
 def create_app():
-    app = Flask(__name__)
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    app = Flask(__name__,
+                static_folder=os.path.join(base_dir, 'static'),
+                template_folder=os.path.join(base_dir, 'templates'))
     app.config.from_object(Config)
 
     db.init_app(app)
