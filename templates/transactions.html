@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{{ 'dark-mode' if dark_mode else '' }}">
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-wallet sidebar-logo"></i>
+                <span class="sidebar-title">ExpenseTracker</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item active"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a>
+                <a href="{{ url_for('analytics.analytics') }}" class="nav-item"><i class="fas fa-chart-pie"></i><span>Analytics</span></a>
+                <a href="{{ url_for('analytics.reports') }}" class="nav-item"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+                <a href="{{ url_for('analytics.settings') }}" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h2 class="page-title">Transactions</h2>
+                <div class="navbar-right">
+                    <span class="user-greeting">Hello, {{ current_user.name }}</span>
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="filters-bar">
+                    <div class="filters-form" id="filtersForm">
+                        <div class="filter-group">
+                            <input type="text" id="filterSearch" placeholder="Search..." class="filter-input" oninput="debounceSearch()">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterRange" class="filter-select" onchange="loadTransactions()">
+                                <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="this_year">This Year</option>
+                                <option value="custom">Custom Date</option>
+                            </select>
+                        </div>
+                        <div class="filter-group" id="customDateGroup" style="display:none;">
+                            <input type="date" id="filterStartDate" class="filter-input" onchange="loadTransactions()">
+                            <span> to </span>
+                            <input type="date" id="filterEndDate" class="filter-input" onchange="loadTransactions()">
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterType" class="filter-select" onchange="loadTransactions()">
+                                <option value="">All Types</option>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterCategory" class="filter-select" onchange="loadTransactions()">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}">{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterPayment" class="filter-select" onchange="loadTransactions()">
+                                <option value="">All Payments</option>
+                                {% for pm in payment_methods %}
+                                <option value="{{ pm }}">{{ pm }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="filterSort" class="filter-select" onchange="loadTransactions()">
+                                <option value="date_desc">Newest First</option>
+                                <option value="date_asc">Oldest First</option>
+                                <option value="amount_desc">Highest Amount</option>
+                                <option value="amount_asc">Lowest Amount</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txTableBody">
+                            <tr><td colspan="7" class="empty-table"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="txPagination"></div>
+
+                <div class="table-summary" id="txSummary"></div>
+            </div>
+
+            <button class="fab" onclick="openModal('addTransactionModal')"><i class="fas fa-plus"></i></button>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="addTransactionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Transaction</h3>
+                <button class="modal-close" onclick="closeModal('addTransactionModal')">&times;</button>
+            </div>
+            <form id="addTxForm" class="modal-form" onsubmit="return handleAddTransaction(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <div class="type-toggle">
+                            <button type="button" class="type-btn active" data-type="expense" onclick="selectType(this)">Expense</button>
+                            <button type="button" class="type-btn" data-type="income" onclick="selectType(this)">Income</button>
+                        </div>
+                        <input type="hidden" name="type" id="txType" value="expense">
+                    </div>
+                </div>
+                <div class="form-group"><label>Title</label><input type="text" id="txTitle" placeholder="e.g. Lunch" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Amount</label><input type="number" id="txAmount" step="0.01" min="0.01" placeholder="0.00" required></div>
+                    <div class="form-group"><label>Date</label><input type="date" id="txDate" value="" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="txCategory" required>
+                            <option value="">Select category</option>
+                            {% for cat in ['Food','Shopping','Bills','Medical','Travel','Fuel','Education','Investment','Salary','Entertainment','Others'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select id="txPayment">
+                            {% for pm in ['Cash','UPI','Credit Card','Debit Card','Net Banking','Wallet'] %}
+                            <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label>Notes</label><textarea id="txNotes" rows="2" placeholder="Optional notes..."></textarea></div>
+                <button type="submit" class="btn btn-primary btn-block" id="addTxBtn"><i class="fas fa-plus"></i> Save Transaction</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editTransactionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Transaction</h3>
+                <button class="modal-close" onclick="closeModal('editTransactionModal')">&times;</button>
+            </div>
+            <form id="editTxForm" class="modal-form" onsubmit="return handleEditTransaction(event)">
+                <input type="hidden" id="editTxId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <div class="type-toggle">
+                            <button type="button" class="type-btn" data-type="expense" onclick="selectEditType(this)">Expense</button>
+                            <button type="button" class="type-btn" data-type="income" onclick="selectEditType(this)">Income</button>
+                        </div>
+                        <input type="hidden" id="editTxType" value="">
+                    </div>
+                </div>
+                <div class="form-group"><label>Title</label><input type="text" id="editTxTitle" required></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Amount</label><input type="number" id="editTxAmount" step="0.01" min="0.01" required></div>
+                    <div class="form-group"><label>Date</label><input type="date" id="editTxDate" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="editTxCategory" required>
+                            {% for cat in ['Food','Shopping','Bills','Medical','Travel','Fuel','Education','Investment','Salary','Entertainment','Others'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select id="editTxPayment">
+                            {% for pm in ['Cash','UPI','Credit Card','Debit Card','Net Banking','Wallet'] %}
+                            <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label>Notes</label><textarea id="editTxNotes" rows="2"></textarea></div>
+                <button type="submit" class="btn btn-primary btn-block" id="editTxBtn"><i class="fas fa-save"></i> Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const currencySymbol = '{{ currency }}';
+        const categoryIcons = {
+            'Food': 'fa-utensils', 'Shopping': 'fa-shopping-bag', 'Bills': 'fa-file-invoice',
+            'Medical': 'fa-heartbeat', 'Travel': 'fa-plane', 'Fuel': 'fa-gas-pump',
+            'Education': 'fa-graduation-cap', 'Investment': 'fa-chart-line', 'Salary': 'fa-briefcase',
+            'Entertainment': 'fa-film', 'Others': 'fa-ellipsis-h'
+        };
+        let currentPage = 1;
+        let searchTimeout = null;
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function openModal(id) { document.getElementById(id).classList.add('active'); document.body.style.overflow = 'hidden'; }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); document.body.style.overflow = ''; }
+        function selectType(btn) { btn.parentElement.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.getElementById('txType').value = btn.dataset.type; }
+        function selectEditType(btn) { btn.parentElement.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); document.getElementById('editTxType').value = btn.dataset.type; }
+        function fmt(n) { return currencySymbol + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        function showToast(message, type) {
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + type;
+            t.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i><span>' + message + '</span><button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+            c.appendChild(t);
+            setTimeout(() => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, 4000);
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.addEventListener('click', function(e) { if (e.target === this) { this.classList.remove('active'); document.body.style.overflow = ''; } });
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.active').forEach(m => { m.classList.remove('active'); document.body.style.overflow = ''; });
+        });
+
+        document.getElementById('filterRange').addEventListener('change', function() {
+            document.getElementById('customDateGroup').style.display = this.value === 'custom' ? 'flex' : 'none';
+        });
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(loadTransactions, 300);
+        }
+
+        async function loadTransactions(page) {
+            currentPage = page || 1;
+            const params = new URLSearchParams({
+                page: currentPage,
+                search: document.getElementById('filterSearch').value,
+                type: document.getElementById('filterType').value,
+                category: document.getElementById('filterCategory').value,
+                payment: document.getElementById('filterPayment').value,
+                filter: document.getElementById('filterRange').value,
+                sort: document.getElementById('filterSort').value,
+                start_date: document.getElementById('filterStartDate').value,
+                end_date: document.getElementById('filterEndDate').value
+            });
+
+            try {
+                const resp = await fetch('/api/transactions?' + params);
+                const data = await resp.json();
+                renderTable(data.transactions);
+                renderPagination(data);
+                renderSummary(data);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderTable(transactions) {
+            const tbody = document.getElementById('txTableBody');
+            if (!transactions || transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-table"><i class="fas fa-inbox"></i><p>No transactions found.</p></td></tr>';
+                return;
+            }
+            tbody.innerHTML = transactions.map(tx => {
+                const icon = categoryIcons[tx.category] || 'fa-ellipsis-h';
+                const amtCls = tx.type === 'income' ? 'amount-income' : 'amount-expense';
+                const sign = tx.type === 'income' ? '+' : '-';
+                return '<tr>' +
+                    '<td>' + tx.date_display + '</td>' +
+                    '<td><strong>' + tx.title + '</strong>' + (tx.description ? '<br><small class="text-muted">' + tx.description + '</small>' : '') + '</td>' +
+                    '<td><span class="badge badge-category">' + tx.category + '</span></td>' +
+                    '<td><span class="badge badge-' + tx.type + '">' + tx.type.charAt(0).toUpperCase() + tx.type.slice(1) + '</span></td>' +
+                    '<td class="' + amtCls + '">' + sign + fmt(tx.amount) + '</td>' +
+                    '<td>' + tx.payment_method + '</td>' +
+                    '<td class="actions-cell">' +
+                    '<button class="btn-icon" onclick="openEditModal(' + tx.id + ')" title="Edit"><i class="fas fa-edit"></i></button> ' +
+                    '<button class="btn-icon btn-danger-icon" onclick="deleteTransaction(' + tx.id + ')" title="Delete"><i class="fas fa-trash"></i></button>' +
+                    '</td></tr>';
+            }).join('');
+        }
+
+        function renderPagination(data) {
+            const el = document.getElementById('txPagination');
+            if (data.pages <= 1) { el.innerHTML = ''; return; }
+            let html = '';
+            if (data.has_prev) html += '<a class="page-link" onclick="loadTransactions(' + (data.current_page - 1) + ')">&laquo; Prev</a>';
+            for (let i = 1; i <= data.pages; i++) {
+                html += '<a class="page-link ' + (i === data.current_page ? 'active' : '') + '" onclick="loadTransactions(' + i + ')">' + i + '</a>';
+            }
+            if (data.has_next) html += '<a class="page-link" onclick="loadTransactions(' + (data.current_page + 1) + ')">Next &raquo;</a>';
+            el.innerHTML = html;
+        }
+
+        function renderSummary(data) {
+            const el = document.getElementById('txSummary');
+            el.innerHTML = '<div class="summary-inline"><span>Total on page: Income ' + fmt(data.page_total_income) + ' | Expense ' + fmt(data.page_total_expense) + '</span><span>' + data.total + ' transactions total</span></div>';
+        }
+
+        async function handleAddTransaction(e) {
+            e.preventDefault();
+            const btn = document.getElementById('addTxBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            const payload = {
+                title: document.getElementById('txTitle').value,
+                amount: parseFloat(document.getElementById('txAmount').value),
+                type: document.getElementById('txType').value,
+                category: document.getElementById('txCategory').value,
+                payment_method: document.getElementById('txPayment').value,
+                date: document.getElementById('txDate').value,
+                description: document.getElementById('txNotes').value
+            };
+
+            try {
+                const resp = await fetch('/api/transactions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    document.getElementById('addTxForm').reset();
+                    document.getElementById('txType').value = 'expense';
+                    document.querySelectorAll('#addTransactionModal .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === 'expense'));
+                    document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+                    closeModal('addTransactionModal');
+                    loadTransactions();
+                } else {
+                    showToast(data.error || 'Failed to add', 'error');
+                }
+            } catch (err) { showToast('Network error.', 'error'); }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus"></i> Save Transaction';
+            return false;
+        }
+
+        async function openEditModal(txId) {
+            try {
+                const resp = await fetch('/api/transactions?filter=this_year&sort=date_desc&page=1');
+                let data = await resp.json();
+                let tx = data.transactions.find(t => t.id === txId);
+                if (!tx) {
+                    const resp2 = await fetch('/api/transactions?filter=custom&start_date=2000-01-01&end_date=2099-12-31&sort=date_desc');
+                    data = await resp2.json();
+                    tx = data.transactions.find(t => t.id === txId);
+                }
+                if (!tx) return;
+
+                document.getElementById('editTxId').value = tx.id;
+                document.getElementById('editTxTitle').value = tx.title;
+                document.getElementById('editTxAmount').value = tx.amount;
+                document.getElementById('editTxDate').value = tx.date;
+                document.getElementById('editTxCategory').value = tx.category;
+                document.getElementById('editTxPayment').value = tx.payment_method;
+                document.getElementById('editTxNotes').value = tx.description;
+                document.getElementById('editTxType').value = tx.type;
+                document.querySelectorAll('#editTransactionModal .type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === tx.type));
+                openModal('editTransactionModal');
+            } catch (err) { showToast('Failed to load transaction.', 'error'); }
+        }
+
+        async function handleEditTransaction(e) {
+            e.preventDefault();
+            const txId = document.getElementById('editTxId').value;
+            const btn = document.getElementById('editTxBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            const payload = {
+                title: document.getElementById('editTxTitle').value,
+                amount: parseFloat(document.getElementById('editTxAmount').value),
+                type: document.getElementById('editTxType').value,
+                category: document.getElementById('editTxCategory').value,
+                payment_method: document.getElementById('editTxPayment').value,
+                date: document.getElementById('editTxDate').value,
+                description: document.getElementById('editTxNotes').value
+            };
+
+            try {
+                const resp = await fetch('/api/transactions/' + txId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await resp.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeModal('editTransactionModal');
+                    loadTransactions();
+                } else { showToast(data.error || 'Failed', 'error'); }
+            } catch (err) { showToast('Network error.', 'error'); }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+            return false;
+        }
+
+        async function deleteTransaction(txId) {
+            if (!confirm('Delete this transaction?')) return;
+            try {
+                const resp = await fetch('/api/transactions/' + txId, { method: 'DELETE' });
+                const data = await resp.json();
+                if (data.success) { showToast(data.message, 'success'); loadTransactions(); }
+            } catch (err) { showToast('Failed to delete.', 'error'); }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() { loadTransactions(1); });
+    </script>
+</body>
+</html>

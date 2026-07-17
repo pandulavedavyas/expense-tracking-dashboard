@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="{{ 'dark-mode' if dark_mode else '' }}">
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-wallet sidebar-logo"></i>
+                <span class="sidebar-title">ExpenseTracker</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item active"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a>
+                <a href="{{ url_for('analytics.analytics') }}" class="nav-item"><i class="fas fa-chart-pie"></i><span>Analytics</span></a>
+                <a href="{{ url_for('analytics.reports') }}" class="nav-item"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+                <a href="{{ url_for('analytics.settings') }}" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('auth.logout') }}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h2 class="page-title">Dashboard</h2>
+                <div class="navbar-right">
+                    <span class="user-greeting">Hello, {{ current_user.name }}</span>
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="summary-cards" id="summaryCards">
+                    <div class="card card-balance">
+                        <div class="card-icon"><i class="fas fa-wallet"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Total Balance</span>
+                            <span class="card-value" id="valBalance">{{ currency }}0.00</span>
+                        </div>
+                    </div>
+                    <div class="card card-income">
+                        <div class="card-icon"><i class="fas fa-arrow-down"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Income</span>
+                            <span class="card-value" id="valIncome">{{ currency }}0.00</span>
+                        </div>
+                    </div>
+                    <div class="card card-expense">
+                        <div class="card-icon"><i class="fas fa-arrow-up"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Expense</span>
+                            <span class="card-value" id="valExpense">{{ currency }}0.00</span>
+                        </div>
+                    </div>
+                    <div class="card card-savings">
+                        <div class="card-icon"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="card-info">
+                            <span class="card-label">Savings</span>
+                            <span class="card-value" id="valSavings">{{ currency }}0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> Monthly Expenses</h3>
+                        <canvas id="monthlyExpenseChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-balance-scale"></i> Income vs Expense</h3>
+                        <canvas id="incomeVsExpenseChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-pie"></i> Category Breakdown</h3>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-line"></i> Savings Trend</h3>
+                        <canvas id="savingsChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bottom-row">
+                    <div class="recent-transactions-card">
+                        <div class="card-header-row">
+                            <h3><i class="fas fa-history"></i> Recent Transactions</h3>
+                            <a href="{{ url_for('transactions.transactions_page') }}" class="view-all">View All</a>
+                        </div>
+                        <div class="transactions-list" id="recentTransactions">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>Loading transactions...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="side-panels">
+                        <div class="budget-card">
+                            <h3><i class="fas fa-bullseye"></i> Budget Progress</h3>
+                            <div id="budgetSection">
+                                <p class="no-budget">Loading...</p>
+                            </div>
+                        </div>
+                        <div class="insights-card">
+                            <h3><i class="fas fa-lightbulb"></i> Financial Insights</h3>
+                            <ul class="insights-list" id="insightsList">
+                                <li><i class="fas fa-info-circle"></i> Loading insights...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="fab" onclick="openModal('addTransactionModal')"><i class="fas fa-plus"></i></button>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="addTransactionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Add Transaction</h3>
+                <button class="modal-close" onclick="closeModal('addTransactionModal')">&times;</button>
+            </div>
+            <form id="addTxForm" class="modal-form" onsubmit="return handleAddTransaction(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <div class="type-toggle">
+                            <button type="button" class="type-btn active" data-type="expense" onclick="selectType(this)">Expense</button>
+                            <button type="button" class="type-btn" data-type="income" onclick="selectType(this)">Income</button>
+                        </div>
+                        <input type="hidden" name="type" id="txType" value="expense">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Title</label>
+                    <input type="text" name="title" id="txTitle" placeholder="e.g. Lunch" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" name="amount" id="txAmount" step="0.01" min="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" name="date" id="txDate" value="{{ today.strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="category" id="txCategory" required>
+                            <option value="">Select category</option>
+                            {% for cat in ['Food','Shopping','Bills','Medical','Travel','Fuel','Education','Investment','Salary','Entertainment','Others'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select name="payment_method" id="txPayment">
+                            {% for pm in ['Cash','UPI','Credit Card','Debit Card','Net Banking','Wallet'] %}
+                            <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="description" id="txNotes" rows="2" placeholder="Optional notes..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="addTxBtn">
+                    <i class="fas fa-plus"></i> Save Transaction
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editTransactionModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Edit Transaction</h3>
+                <button class="modal-close" onclick="closeModal('editTransactionModal')">&times;</button>
+            </div>
+            <form id="editTxForm" class="modal-form" onsubmit="return handleEditTransaction(event)">
+                <input type="hidden" id="editTxId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Type</label>
+                        <div class="type-toggle">
+                            <button type="button" class="type-btn" data-type="expense" onclick="selectEditType(this)">Expense</button>
+                            <button type="button" class="type-btn" data-type="income" onclick="selectEditType(this)">Income</button>
+                        </div>
+                        <input type="hidden" name="type" id="editTxType" value="">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="editTxTitle" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" id="editTxAmount" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" id="editTxDate" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="editTxCategory" required>
+                            {% for cat in ['Food','Shopping','Bills','Medical','Travel','Fuel','Education','Investment','Salary','Entertainment','Others'] %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Method</label>
+                        <select id="editTxPayment">
+                            {% for pm in ['Cash','UPI','Credit Card','Debit Card','Net Banking','Wallet'] %}
+                            <option value="{{ pm }}">{{ pm }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="editTxNotes" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="editTxBtn">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const currencySymbol = '{{ currency }}';
+        const categoryIcons = {
+            'Food': 'fa-utensils', 'Shopping': 'fa-shopping-bag', 'Bills': 'fa-file-invoice',
+            'Medical': 'fa-heartbeat', 'Travel': 'fa-plane', 'Fuel': 'fa-gas-pump',
+            'Education': 'fa-graduation-cap', 'Investment': 'fa-chart-line', 'Salary': 'fa-briefcase',
+            'Entertainment': 'fa-film', 'Others': 'fa-ellipsis-h'
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

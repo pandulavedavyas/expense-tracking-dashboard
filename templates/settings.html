@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="{{ 'dark-mode' if dark_mode else '' }}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="toast-container" id="toastContainer">
+        {% for category, message in messages %}
+        <div class="toast toast-{{ category }}"><i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i><span>{{ message }}</span><button class="toast-close" onclick="this.parentElement.remove()">&times;</button></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header"><i class="fas fa-wallet sidebar-logo"></i><span class="sidebar-title">ExpenseTracker</span></div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a>
+                <a href="{{ url_for('analytics.analytics') }}" class="nav-item"><i class="fas fa-chart-pie"></i><span>Analytics</span></a>
+                <a href="{{ url_for('analytics.reports') }}" class="nav-item"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+                <a href="{{ url_for('analytics.settings') }}" class="nav-item active"><i class="fas fa-cog"></i><span>Settings</span></a>
+            </nav>
+            <div class="sidebar-footer"><a href="{{ url_for('auth.logout') }}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h2 class="page-title">Settings</h2>
+                <div class="navbar-right">
+                    <span class="user-greeting">Hello, {{ current_user.name }}</span>
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                </div>
+            </header>
+
+            <div class="dashboard-content settings-layout">
+                <form method="POST">
+                    <input type="hidden" name="action" value="update">
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-user"></i> Profile</h3>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" name="name" value="{{ user.name }}" required id="settingsName">
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" value="{{ user.email }}" disabled>
+                                <small class="text-muted">Email cannot be changed.</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Member Since</label>
+                                <input type="text" value="{{ user.created_at.strftime('%d %B %Y') }}" disabled>
+                            </div>
+                            <div class="form-group">
+                                <label>Profile Picture URL</label>
+                                <input type="url" name="profile_picture" value="{{ user.profile_picture or '' }}" placeholder="https://example.com/photo.jpg" id="profilePicInput">
+                                <small class="text-muted">Paste a link to your profile image</small>
+                            </div>
+                        </div>
+                        <div class="profile-avatar-section" style="margin-top:15px;">
+                            <div class="profile-avatar-lg" id="avatarPreview">
+                                {% if user.profile_picture %}
+                                <img src="{{ user.profile_picture }}" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+                                {% else %}
+                                <i class="fas fa-user"></i>
+                                {% endif %}
+                            </div>
+                            <span class="avatar-name" id="avatarName">{{ user.name }}</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-wallet"></i> Budget</h3>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label>Monthly Budget</label>
+                                <div class="input-with-icon"><span class="input-icon">{{ user.currency }}</span><input type="number" name="monthly_budget" value="{{ user.monthly_budget }}" step="0.01" min="0" placeholder="0 = No budget"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Savings Goal</label>
+                                <div class="input-with-icon"><span class="input-icon">{{ user.currency }}</span><input type="number" name="savings_goal" value="{{ user.savings_goal }}" step="0.01" min="0" placeholder="0 = No goal"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-palette"></i> Appearance</h3>
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label>Dark Mode</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="dark_mode" {% if user.dark_mode %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Accent Color</label>
+                                <div class="color-options">
+                                    {% for color in ['#2563EB','#10B981','#EF4444','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#6366F1'] %}
+                                    <label class="color-option">
+                                        <input type="radio" name="accent_color" value="{{ color }}" {% if user.accent_color == color %}checked{% endif %}>
+                                        <span class="color-swatch" style="background:{{ color }}"></span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Font Size</label>
+                                <select name="font_size" class="filter-select">
+                                    <option value="small" {% if user.font_size == 'small' %}selected{% endif %}>Small</option>
+                                    <option value="medium" {% if user.font_size == 'medium' %}selected{% endif %}>Medium</option>
+                                    <option value="large" {% if user.font_size == 'large' %}selected{% endif %}>Large</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-bell"></i> Notifications</h3>
+                        <div class="settings-list">
+                            <div class="setting-row">
+                                <div><span class="setting-title">Budget Exceeded Alert</span><span class="setting-desc">Get notified when you exceed your monthly budget</span></div>
+                                <label class="toggle-switch"><input type="checkbox" name="notif_budget" {% if user.notif_budget %}checked{% endif %}><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="setting-row">
+                                <div><span class="setting-title">Monthly Report</span><span class="setting-desc">Receive a monthly spending summary</span></div>
+                                <label class="toggle-switch"><input type="checkbox" name="notif_monthly" {% if user.notif_monthly %}checked{% endif %}><span class="toggle-slider"></span></label>
+                            </div>
+                            <div class="setting-row">
+                                <div><span class="setting-title">Daily Expense Reminder</span><span class="setting-desc">Reminder to log your daily expenses</span></div>
+                                <label class="toggle-switch"><input type="checkbox" name="notif_daily" {% if user.notif_daily %}checked{% endif %}><span class="toggle-slider"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-coins"></i> Currency</h3>
+                        <div class="currency-options">
+                            {% for sym, label in [('₹', 'INR'), ('$', 'USD'), ('€', 'EUR'), ('£', 'GBP')] %}
+                            <label class="currency-option {% if user.currency == sym %}active{% endif %}">
+                                <input type="radio" name="currency" value="{{ sym }}" {% if user.currency == sym %}checked{% endif %} onchange="document.querySelectorAll('.currency-option').forEach(e=>e.classList.remove('active'));this.parentElement.classList.add('active')">
+                                <span class="currency-sym">{{ sym }}</span>
+                                <span class="currency-label">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-database"></i> Data Management</h3>
+                        <div class="data-btns">
+                            <a href="{{ url_for('analytics.export_csv', year=current_year) }}" class="btn btn-success"><i class="fas fa-file-csv"></i> Export CSV</a>
+                            <a href="{{ url_for('analytics.export_pdf', year=current_year) }}" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Export PDF</a>
+                            <button type="button" class="btn btn-warning" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
+                            <button type="button" class="btn btn-danger" onclick="confirmReset()"><i class="fas fa-trash"></i> Reset All Data</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card settings-section">
+                        <h3><i class="fas fa-info-circle"></i> About</h3>
+                        <div class="about-info">
+                            <div class="about-row"><span>Version</span><span>1.0.0</span></div>
+                            <div class="about-row"><span>Developer</span><span>ExpenseTracker Team</span></div>
+                            <div class="about-row"><span>Framework</span><span>Flask + SQLAlchemy</span></div>
+                            <div class="about-row"><span>Database</span><span>SQLite</span></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block settings-save"><i class="fas fa-save"></i> Save All Settings</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal" style="max-width:400px">
+            <div class="modal-header"><h3>Confirm Reset</h3><button class="modal-close" onclick="closeModal('resetModal')">&times;</button></div>
+            <div class="modal-form" style="text-align:center;padding:30px">
+                <i class="fas fa-exclamation-triangle" style="font-size:40px;color:#ef4444;margin-bottom:15px"></i>
+                <p>This will permanently delete ALL your transactions. This cannot be undone.</p>
+                <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
+                    <button class="btn btn-secondary" onclick="closeModal('resetModal')">Cancel</button>
+                    <form method="POST" style="display:inline"><input type="hidden" name="action" value="reset"><button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Yes, Reset</button></form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        function confirmReset() { openModal('resetModal'); }
+
+        // Live profile picture preview
+        const picInput = document.getElementById('profilePicInput');
+        const avatarPreview = document.getElementById('avatarPreview');
+        if (picInput) {
+            picInput.addEventListener('input', function() {
+                const url = this.value.trim();
+                if (url) {
+                    avatarPreview.innerHTML = '<img src="' + url + '" alt="Profile" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.innerHTML=\'<i class=fas fa-user></i>\'">';
+                } else {
+                    avatarPreview.innerHTML = '<i class="fas fa-user"></i>';
+                }
+            });
+        }
+
+        // Live name preview
+        const nameInput = document.getElementById('settingsName');
+        const avatarName = document.getElementById('avatarName');
+        if (nameInput && avatarName) {
+            nameInput.addEventListener('input', function() {
+                avatarName.textContent = this.value || 'User';
+            });
+        }
+
+        // Live dark mode toggle
+        const darkToggle = document.querySelector('input[name="dark_mode"]');
+        if (darkToggle) {
+            darkToggle.addEventListener('change', function() {
+                document.body.classList.toggle('dark-mode', this.checked);
+            });
+        }
+
+        // Live font size preview
+        const fontSelect = document.querySelector('select[name="font_size"]');
+        if (fontSelect) {
+            fontSelect.addEventListener('change', function() {
+                document.documentElement.style.fontSize = this.value === 'small' ? '13px' : this.value === 'large' ? '17px' : '15px';
+            });
+        }
+
+        // Live accent color preview
+        document.querySelectorAll('input[name="accent_color"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.documentElement.style.setProperty('--primary', this.value);
+            });
+        });
+
+        setTimeout(() => { document.querySelectorAll('.toast').forEach(t => { t.style.animation = 'toastOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }); }, 4000);
+    </script>
+</body>
+</html>

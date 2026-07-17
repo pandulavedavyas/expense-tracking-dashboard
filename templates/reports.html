@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Expense Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="{{ 'dark-mode' if dark_mode else '' }}">
+    <div class="toast-container" id="toastContainer"></div>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header"><i class="fas fa-wallet sidebar-logo"></i><span class="sidebar-title">ExpenseTracker</span></div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item"><i class="fas fa-home"></i><span>Dashboard</span></a>
+                <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><i class="fas fa-exchange-alt"></i><span>Transactions</span></a>
+                <a href="{{ url_for('analytics.analytics') }}" class="nav-item"><i class="fas fa-chart-pie"></i><span>Analytics</span></a>
+                <a href="{{ url_for('analytics.reports') }}" class="nav-item active"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+                <a href="{{ url_for('analytics.settings') }}" class="nav-item"><i class="fas fa-cog"></i><span>Settings</span></a>
+            </nav>
+            <div class="sidebar-footer"><a href="{{ url_for('auth.logout') }}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a></div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <button class="sidebar-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                <h2 class="page-title">Reports</h2>
+                <div class="navbar-right">
+                    <span class="user-greeting">Hello, {{ current_user.name }}</span>
+                    <div class="user-avatar"><i class="fas fa-user"></i></div>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <div class="glass-card filter-panel">
+                    <form method="GET" class="report-filters">
+                        <div class="filter-group">
+                            <label>Report Type</label>
+                            <select name="report_type" class="filter-select">
+                                <option value="yearly" {% if report_type == 'yearly' %}selected{% endif %}>Yearly Report</option>
+                                <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly Report</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Year</label>
+                            <select name="year" class="filter-select">
+                                {% for y in range(current_year, current_year - 5, -1) %}
+                                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group" id="monthGroup" style="{% if report_type != 'monthly' %}display:none{% endif %}">
+                            <label>Month</label>
+                            <select name="month" class="filter-select">
+                                {% for m in range(1, 13) %}
+                                <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Category</label>
+                            <select name="category" class="filter-select">
+                                <option value="">All Categories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Payment</label>
+                            <select name="payment" class="filter-select">
+                                <option value="">All Payments</option>
+                                {% for pm in payment_methods %}
+                                <option value="{{ pm }}" {% if selected_payment == pm %}selected{% endif %}>{{ pm }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Type</label>
+                            <select name="type" class="filter-select">
+                                <option value="">All</option>
+                                <option value="income" {% if selected_type == 'income' %}selected{% endif %}>Income</option>
+                                <option value="expense" {% if selected_type == 'expense' %}selected{% endif %}>Expense</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter"></i> Generate</button>
+                    </form>
+                </div>
+
+                <div class="report-stat-cards">
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#10b981"><i class="fas fa-arrow-down"></i></div><div><span class="rstat-label">Income</span><span class="rstat-value">{{ currency }}{{ "{:,.0f}".format(total_income) }}</span></div></div>
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#ef4444"><i class="fas fa-arrow-up"></i></div><div><span class="rstat-label">Expense</span><span class="rstat-value">{{ currency }}{{ "{:,.0f}".format(total_expense) }}</span></div></div>
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#2563eb"><i class="fas fa-piggy-bank"></i></div><div><span class="rstat-label">Savings</span><span class="rstat-value">{{ currency }}{{ "{:,.0f}".format(savings) }}</span></div></div>
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#8b5cf6"><i class="fas fa-receipt"></i></div><div><span class="rstat-label">Transactions</span><span class="rstat-value">{{ tx_count }}</span></div></div>
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#f59e0b"><i class="fas fa-calculator"></i></div><div><span class="rstat-label">Avg Transaction</span><span class="rstat-value">{{ currency }}{{ "{:,.0f}".format(avg_transaction) }}</span></div></div>
+                    <div class="glass-card report-stat"><div class="rstat-icon" style="color:#ec4899"><i class="fas fa-arrow-up"></i></div><div><span class="rstat-label">Highest</span><span class="rstat-value">{{ currency }}{{ "{:,.0f}".format(highest_expense) }}</span></div></div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-header-row">
+                        <h3><i class="fas fa-table"></i> Transaction Records</h3>
+                        <div class="export-btns">
+                            <a href="{{ url_for('analytics.export_csv', year=selected_year, month=selected_month) }}" class="btn btn-success btn-sm"><i class="fas fa-file-csv"></i> CSV</a>
+                            <a href="{{ url_for('analytics.export_pdf', year=selected_year, month=selected_month) }}" class="btn btn-danger btn-sm"><i class="fas fa-file-pdf"></i> PDF</a>
+                            <button onclick="window.print()" class="btn btn-info btn-sm"><i class="fas fa-print"></i> Print</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Date</th><th>Title</th><th>Category</th><th>Amount</th><th>Type</th><th>Payment</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in transactions %}
+                                <tr>
+                                    <td>{{ tx.date.strftime('%d %b %Y') }}</td>
+                                    <td><strong>{{ tx.title }}</strong>{% if tx.description %}<br><small class="text-muted">{{ tx.description }}</small>{% endif %}</td>
+                                    <td><span class="badge badge-category">{{ tx.category }}</span></td>
+                                    <td class="{% if tx.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">{{ currency }}{{ "{:,.2f}".format(tx.amount) }}</td>
+                                    <td><span class="badge {% if tx.type == 'income' %}badge-income{% else %}badge-expense{% endif %}">{{ tx.type|capitalize }}</span></td>
+                                    <td>{{ tx.payment_method }}</td>
+                                    <td><span class="badge badge-done"><i class="fas fa-check"></i> Completed</span></td>
+                                </tr>
+                                {% endfor %}
+                                {% if not transactions %}
+                                <tr><td colspan="7" class="empty-table"><i class="fas fa-inbox"></i><p>No transactions found.</p></td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> Monthly Breakdown - {{ selected_year }}</h3>
+                    <canvas id="reportBarChart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.querySelector('select[name="report_type"]').addEventListener('change', function() {
+            document.getElementById('monthGroup').style.display = this.value === 'monthly' ? 'block' : 'none';
+        });
+    </script>
+    <script>
+        const yearlyData = {{ yearly|tojson }};
+        const cur = '{{ currency }}';
+    </script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const months = yearlyData.map(d => d.month);
+            new Chart(document.getElementById('reportBarChart'), {
+                type: 'bar',
+                data: { labels: months, datasets: [
+                    { label: 'Income', data: yearlyData.map(d => d.income), backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 6 },
+                    { label: 'Expense', data: yearlyData.map(d => d.expense), backgroundColor: 'rgba(239,68,68,0.7)', borderRadius: 6 }
+                ]},
+                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { callback: v => cur + v.toLocaleString() } } } }
+            });
+        });
+    </script>
+</body>
+</html>
