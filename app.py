@@ -15,6 +15,9 @@ def create_app():
                 template_folder=os.path.join(base_dir, 'templates'))
     app.config.from_object(Config)
 
+    from whitenoise import WhiteNoise
+    app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(base_dir, 'static'), prefix='static/')
+
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
