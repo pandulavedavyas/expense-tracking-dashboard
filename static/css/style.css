@@ -146,6 +146,149 @@ canvas {
     overflow: hidden;
 }
 
+.auth-body,
+.auth-body .auth-card,
+.auth-body .auth-card * {
+    color: #E2E8F0 !important;
+}
+
+.auth-body .auth-header h1 {
+    color: #FFFFFF !important;
+}
+
+.auth-body .auth-header p {
+    color: #94A3B8 !important;
+}
+
+.auth-body .auth-form label {
+    color: #CBD5E1 !important;
+}
+
+.auth-body .auth-form input,
+.auth-body .auth-form select {
+    color: #F1F5F9 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+.auth-body .auth-form input::placeholder {
+    color: #64748B !important;
+}
+
+.auth-body .auth-form input:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(79,140,255,0.25) !important;
+    background: rgba(255,255,255,0.08) !important;
+}
+
+.auth-body .auth-options {
+    color: #94A3B8 !important;
+}
+
+.auth-body .checkbox-label {
+    color: #CBD5E1 !important;
+}
+
+.auth-body .forgot-link {
+    color: #7BA8FF !important;
+}
+
+.auth-body .auth-footer {
+    color: #94A3B8 !important;
+}
+
+.auth-body .auth-footer a {
+    color: #7BA8FF !important;
+}
+
+.auth-body .auth-divider {
+    color: #64748B !important;
+}
+
+.auth-body .auth-divider::before,
+.auth-body .auth-divider::after {
+    background: rgba(255,255,255,0.12) !important;
+}
+
+.auth-body .btn-google {
+    color: #E2E8F0 !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+
+.auth-body .btn-google:hover {
+    background: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+
+.auth-body .toggle-password {
+    color: #64748B !important;
+}
+
+.auth-body .toggle-password:hover {
+    color: #CBD5E1 !important;
+}
+
+.auth-body .field-hint {
+    color: #64748B !important;
+}
+
+.auth-body .hint-success {
+    color: #4ADE80 !important;
+}
+
+.auth-body .hint-error {
+    color: #F87171 !important;
+}
+
+.auth-body .optional-tag {
+    color: #64748B !important;
+    background: rgba(255,255,255,0.08) !important;
+}
+
+.auth-body .auth-note {
+    color: #FBBF24 !important;
+}
+
+.auth-body .strength-bar {
+    background: transparent;
+}
+
+.auth-body .password-input input {
+    color: #F1F5F9 !important;
+}
+
+.auth-body .modal-overlay .modal {
+    background: #0D1425 !important;
+}
+
+.auth-body .modal-overlay .modal * {
+    color: #E2E8F0 !important;
+}
+
+.auth-body .modal-overlay .modal-header h3,
+.auth-body .modal-overlay .modal-header h2 {
+    color: #FFFFFF !important;
+}
+
+.auth-body .modal-overlay .modal p {
+    color: #94A3B8 !important;
+}
+
+.auth-body .modal-overlay .modal input {
+    color: #F1F5F9 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+.auth-body .modal-overlay .modal-close {
+    color: #64748B !important;
+}
+
+.auth-body .modal-overlay .modal-close:hover {
+    color: #F87171 !important;
+    background: rgba(239,68,68,0.1) !important;
+}
+
 .auth-body::before {
     content: '';
     position: absolute;
