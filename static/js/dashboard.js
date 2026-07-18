@@ -393,6 +393,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Page load animation
     document.body.classList.add('page-loaded');
 
+    // Page transition overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'page-transition';
+    document.body.appendChild(overlay);
+    setTimeout(function() { overlay.remove(); }, 700);
+
     // Ripple effect on buttons
     document.addEventListener('click', function(e) {
         const target = e.target.closest('.btn, .nav-item, .card');
@@ -418,4 +424,30 @@ document.addEventListener('DOMContentLoaded', function() {
         var progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
         scrollProgress.style.width = progress + '%';
     });
+
+    // Scroll-triggered intersection observer for cards
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+
+        document.querySelectorAll('.chart-card, .recent-transactions-card, .budget-card, .insights-card, .insights-full, .table-container, .settings-section, .settings-card, .filter-panel').forEach(function(el) {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            observer.observe(el);
+        });
+    }
 });
+
+// CSS class for scroll-triggered visibility
+(function() {
+    var style = document.createElement('style');
+    style.textContent = '.animate-visible { opacity: 1 !important; transform: translateY(0) !important; }';
+    document.head.appendChild(style);
+})();

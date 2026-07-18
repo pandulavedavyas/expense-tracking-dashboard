@@ -62,13 +62,11 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
-        remember = request.form.get('remember') in ('on', '1', 'true', 'yes')
-
         user = User.query.filter_by(email=email).first()
 
         if user and check_password_hash(user.password, password):
             session.permanent = True
-            login_user(user, remember=remember)
+            login_user(user, remember=True)
             next_page = request.args.get('next')
             resp = redirect(next_page or url_for('dashboard.index'))
             if remember:
