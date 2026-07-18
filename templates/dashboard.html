@@ -42,6 +42,43 @@
             </header>
 
             <div class="dashboard-content">
+                <div class="dashboard-hero">
+                    <div class="hero-content">
+                        <div class="hero-left">
+                            <div class="hero-greeting">
+                                <h2>Good {{ greeting }}, {{ current_user.name }}!</h2>
+                                <p>Here's your financial overview</p>
+                            </div>
+                            <div class="hero-balance">
+                                <span class="label">Total Balance</span>
+                                <span class="amount" id="heroBalance">{{ currency }}0.00</span>
+                            </div>
+                            <div class="hero-stats">
+                                <div class="hero-stat income">
+                                    <i class="fas fa-arrow-down"></i>
+                                    <span>Income: </span>
+                                    <span class="value" id="heroIncome">{{ currency }}0.00</span>
+                                </div>
+                                <div class="hero-stat expense">
+                                    <i class="fas fa-arrow-up"></i>
+                                    <span>Expense: </span>
+                                    <span class="value" id="heroExpense">{{ currency }}0.00</span>
+                                </div>
+                                <div class="hero-stat savings">
+                                    <i class="fas fa-piggy-bank"></i>
+                                    <span>Savings: </span>
+                                    <span class="value" id="heroSavings">{{ currency }}0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-actions">
+                            <button class="btn btn-primary" onclick="openModal('addTransactionModal')">
+                                <i class="fas fa-plus"></i> Add Transaction
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="summary-cards" id="summaryCards">
                     <div class="card card-balance">
                         <div class="card-icon"><i class="fas fa-wallet"></i></div>

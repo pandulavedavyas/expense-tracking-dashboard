@@ -63,11 +63,34 @@ function fmt(n) {
     return currencySymbol + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function animateCounter(element, targetValue, duration) {
+    duration = duration || 800;
+    const startValue = 0;
+    const startTime = performance.now();
+
+    function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const currentValue = startValue + (targetValue - startValue) * eased;
+        element.textContent = fmt(currentValue);
+        if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+}
+
 function updateCards(dash) {
-    document.getElementById('valBalance').textContent = fmt(dash.summary.balance);
-    document.getElementById('valIncome').textContent = fmt(dash.summary.total_income);
-    document.getElementById('valExpense').textContent = fmt(dash.summary.total_expense);
-    document.getElementById('valSavings').textContent = fmt(dash.summary.savings);
+    animateCounter(document.getElementById('valBalance'), dash.summary.balance);
+    animateCounter(document.getElementById('valIncome'), dash.summary.total_income);
+    animateCounter(document.getElementById('valExpense'), dash.summary.total_expense);
+    animateCounter(document.getElementById('valSavings'), dash.summary.savings);
+
+    if (document.getElementById('heroBalance')) {
+        animateCounter(document.getElementById('heroBalance'), dash.summary.balance, 1000);
+        animateCounter(document.getElementById('heroIncome'), dash.summary.total_income);
+        animateCounter(document.getElementById('heroExpense'), dash.summary.total_expense);
+        animateCounter(document.getElementById('heroSavings'), dash.summary.savings);
+    }
 }
 
 function updateRecentTransactions(transactions) {
@@ -348,4 +371,33 @@ function openEditModal(txId) {
 
 document.addEventListener('DOMContentLoaded', function() {
     loadDashboard('this_month');
+
+    // Page load animation
+    document.body.classList.add('page-loaded');
+
+    // Ripple effect on buttons
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('.btn, .nav-item, .card');
+        if (!target) return;
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        const rect = target.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        target.appendChild(ripple);
+        setTimeout(function() { ripple.remove(); }, 600);
+    });
+
+    // Scroll progress indicator
+    var scrollProgress = document.createElement('div');
+    scrollProgress.className = 'scroll-progress';
+    document.body.appendChild(scrollProgress);
+    window.addEventListener('scroll', function() {
+        var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        var scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        var progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+        scrollProgress.style.width = progress + '%';
+    });
 });

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from datetime import date
+from datetime import date, datetime
 from models.transaction import Transaction
 from services.calculations import (
     get_monthly_summary, get_yearly_summary,
@@ -15,4 +15,11 @@ dashboard_bp = Blueprint('dashboard', __name__)
 def index():
     today = date.today()
     currency = current_user.currency or '₹'
-    return render_template('dashboard.html', today=today, currency=currency)
+    hour = datetime.now().hour
+    if hour < 12:
+        greeting = 'Morning'
+    elif hour < 17:
+        greeting = 'Afternoon'
+    else:
+        greeting = 'Evening'
+    return render_template('dashboard.html', today=today, currency=currency, greeting=greeting)
