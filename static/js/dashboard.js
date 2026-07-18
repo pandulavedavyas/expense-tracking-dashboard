@@ -3,6 +3,24 @@ let ivChart = null;
 let catChart = null;
 let savChart = null;
 
+function getChartColors() {
+    const style = getComputedStyle(document.documentElement);
+    return {
+        text: style.getPropertyValue('--text').trim() || '#1E293B',
+        textSecondary: style.getPropertyValue('--text-secondary').trim() || '#475569',
+        grid: style.getPropertyValue('--border').trim() || 'rgba(0,0,0,0.08)',
+        bg: style.getPropertyValue('--bg').trim() || '#F5F7FA'
+    };
+}
+
+function applyChartDefaults() {
+    const c = getChartColors();
+    Chart.defaults.color = c.textSecondary;
+    Chart.defaults.borderColor = c.grid;
+}
+
+if (typeof Chart !== 'undefined') applyChartDefaults();
+
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
 }
@@ -179,7 +197,7 @@ function updateCharts(dash) {
             type: 'doughnut',
             data: {
                 labels: catLabels,
-                datasets: [{ data: catData, backgroundColor: catLabels.map(l => categoryColors[l] || '#6b7280'), borderWidth: 2, borderColor: '#fff' }]
+                datasets: [{ data: catData, backgroundColor: catLabels.map(l => categoryColors[l] || '#6b7280'), borderWidth: 2, borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#fff' }]
             },
             options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' } } } }
         });

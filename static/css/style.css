@@ -1,25 +1,54 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 /* ============================================
-   1. CSS VARIABLES
+   1. CSS VARIABLES — LIGHT MODE (DEFAULT)
    ============================================ */
 :root {
-    --bg: #0B1220;
-    --bg-elevated: #0D1425;
-    --surface: rgba(255,255,255,0.06);
-    --surface-hover: rgba(255,255,255,0.10);
+    --bg: #F5F7FA;
+    --bg-elevated: #FFFFFF;
+    --surface: rgba(0,0,0,0.04);
+    --surface-hover: rgba(0,0,0,0.07);
     --primary: #4F8CFF;
     --primary-dark: #3A6FD8;
     --primary-light: #7BA8FF;
     --secondary: #7C5CFF;
     --secondary-dark: #6347E0;
-    --success: #22C55E;
-    --success-dark: #16A34A;
-    --danger: #EF4444;
-    --danger-dark: #DC2626;
-    --warning: #F59E0B;
-    --warning-dark: #D97706;
-    --info: #3B82F6;
+    --success: #16A34A;
+    --success-dark: #15803D;
+    --danger: #DC2626;
+    --danger-dark: #B91C1C;
+    --warning: #D97706;
+    --warning-dark: #B45309;
+    --info: #2563EB;
+    --text: #1E293B;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border: rgba(0,0,0,0.08);
+    --border-hover: rgba(0,0,0,0.14);
+    --sidebar-bg: #FFFFFF;
+    --sidebar-text: #64748B;
+    --sidebar-active: var(--primary);
+    --card-bg: #FFFFFF;
+    --card-bg-solid: #FFFFFF;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.1);
+    --shadow-glow: 0 0 20px rgba(79,140,255,0.1);
+    --radius: 16px;
+    --radius-sm: 12px;
+    --radius-xs: 8px;
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ============================================
+   1b. CSS VARIABLES — DARK MODE
+   ============================================ */
+body.dark-mode {
+    --bg: #0B1220;
+    --bg-elevated: #0D1425;
+    --surface: rgba(255,255,255,0.06);
+    --surface-hover: rgba(255,255,255,0.10);
     --text: #FFFFFF;
     --text-secondary: #94A3B8;
     --text-muted: #64748B;
@@ -27,18 +56,11 @@
     --border-hover: rgba(255,255,255,0.14);
     --sidebar-bg: #0D1425;
     --sidebar-text: #94A3B8;
-    --sidebar-active: var(--primary);
     --card-bg: rgba(255,255,255,0.06);
     --card-bg-solid: #111827;
     --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
     --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
     --shadow-glow: 0 0 20px rgba(79,140,255,0.15);
-    --radius: 16px;
-    --radius-sm: 12px;
-    --radius-xs: 8px;
-    --transition: all 0.3s ease;
-    --transition-fast: all 0.15s ease;
-    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ============================================
