@@ -23,6 +23,13 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message_category = 'error'
 
+    from routes.auth import auth_bp, _init_oauth
+    from routes.dashboard import dashboard_bp
+    from routes.transactions import transactions_bp
+    from routes.analytics import analytics_bp
+
+    _init_oauth(app)
+
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -37,11 +44,6 @@ def create_app():
                 'accent_color': current_user.accent_color
             }
         return {'currency': '₹', 'dark_mode': False, 'accent_color': '#2563EB'}
-
-    from routes.auth import auth_bp
-    from routes.dashboard import dashboard_bp
-    from routes.transactions import transactions_bp
-    from routes.analytics import analytics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
